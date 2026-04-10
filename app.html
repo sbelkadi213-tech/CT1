@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Service - Tableau de Bord</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; color: #333; }
+
+/* LOGIN */
+#loginScreen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a3a5c 0%, #0d6efd 50%, #0a9396 100%);
+}
+.login-box {
+  background: white; border-radius: 16px; padding: 48px 40px;
+  width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-logo { text-align: center; margin-bottom: 32px; }
+.login-logo .icon { font-size: 56px; display: block; margin-bottom: 12px; }
+.login-logo h1 { color: #1a3a5c; font-size: 22px; font-weight: 700; }
+.login-logo p { color: #666; font-size: 13px; margin-top: 4px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #444; }
+.form-group input {
+  width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0;
+  border-radius: 8px; font-size: 15px; transition: border-color 0.2s;
+  outline: none;
+}
+.form-group input:focus { border-color: #0d6efd; }
+.btn-login {
+  width: 100%; padding: 13px; background: linear-gradient(135deg, #0d6efd, #0a9396);
+  color: white; border: none; border-radius: 8px; font-size: 16px;
+  font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+}
+.btn-login:hover { opacity: 0.9; }
+.login-error {
+  background: #ffe0e0; border: 1px solid #ff4444; border-radius: 8px;
+  padding: 10px 14px; color: #cc0000; font-size: 13px;
+  margin-bottom: 16px; display: none;
+}
+.demo-info {
+  margin-top: 20px; background: #f0f7ff; border-radius: 8px;
+  padding: 12px; font-size: 12px; color: #555; text-align: center;
+}
+.demo-info strong { color: #0d6efd; }
+
+/* APP LAYOUT */
+#appScreen { display: none; min-height: 100vh; }
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #1a3a5c 0%, #0d6efd 100%);
+  color: white; padding: 0 20px; display: flex; align-items: center;
+  justify-content: space-between; height: 60px; position: fixed;
+  top: 0; left: 0; right: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header h1 { font-size: 18px; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.user-badge {
+  background: rgba(255,255,255,0.15); border-radius: 20px;
+  padding: 5px 14px; font-size: 13px; font-weight: 600;
+}
+.admin-badge {
+  background: #ffd700; color: #1a3a5c; border-radius: 20px;
+  padding: 3px 10px; font-size: 11px; font-weight: 700;
+}
+.btn-logout {
+  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+  color: white; padding: 6px 14px; border-radius: 6px;
+  cursor: pointer; font-size: 13px; transition: background 0.2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,0.3); }
+.menu-toggle { display: none; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed; top: 60px; left: 0; bottom: 0; width: 240px;
+  background: #1a3a5c; overflow-y: auto; z-index: 900;
+  transition: transform 0.3s; padding-bottom: 20px;
+}
+.sidebar.hidden { transform: translateX(-240px); }
+.nav-section { padding: 14px 16px 6px; font-size: 10px; font-weight: 700;
+  color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 20px; color: rgba(255,255,255,0.75);
+  cursor: pointer; transition: all 0.2s; font-size: 14px;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+.nav-item.active { background: rgba(13,110,253,0.3); color: white; border-left-color: #0d6efd; }
+.nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+.nav-item .label { flex: 1; }
+.nav-sub { padding-left: 36px; }
+.nav-sub .nav-item { font-size: 13px; padding: 8px 20px 8px 0; border-left: none; }
+.nav-sub .nav-item.active { background: rgba(13,110,253,0.2); border-radius: 0 6px 6px 0; }
+
+/* MAIN CONTENT */
+.main-content {
+  margin-left: 240px; margin-top: 60px; padding: 24px;
+  min-height: calc(100vh - 60px); transition: margin-left 0.3s;
+}
+.main-content.full { margin-left: 0; }
+
+/* PAGE */
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 22px; font-weight: 700; color: #1a3a5c; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px; }
+
+/* CARDS */
+.card {
+  background: white; border-radius: 12px; padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px;
+}
+.card-title {
+  font-size: 16px; font-weight: 700; color: #1a3a5c;
+  margin-bottom: 16px; padding-bottom: 10px;
+  border-bottom: 2px solid #e8f0fe; display: flex; align-items: center; gap: 8px;
+}
+
+/* TABS */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.tab {
+  padding: 8px 18px; border: 2px solid #dee2e6; background: white;
+  border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+  color: #555; transition: all 0.2s;
+}
+.tab:hover { border-color: #0d6efd; color: #0d6efd; }
+.tab.active { background: #0d6efd; border-color: #0d6efd; color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* SEARCH */
+.search-bar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.search-bar input {
+  flex: 1; min-width: 200px; padding: 9px 14px;
+  border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;
+}
+.search-bar input:focus { border-color: #0d6efd; }
+
+/* BUTTONS */
+.btn {
+  padding: 8px 16px; border: none; border-radius: 7px;
+  cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: #0d6efd; color: white; }
+.btn-primary:hover { background: #0b5ed7; }
+.btn-success { background: #198754; color: white; }
+.btn-success:hover { background: #157347; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-danger:hover { background: #bb2d3b; }
+.btn-warning { background: #ffc107; color: #333; }
+.btn-warning:hover { background: #e5a800; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-info { background: #0dcaf0; color: #333; }
+.btn-info:hover { background: #0ab5d5; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #5c636a; }
+
+/* TABLE */
+.table-container { overflow-x: auto; border-radius: 8px; border: 1px solid #e0e0e0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  background: #1a3a5c; color: white; padding: 10px 12px;
+  text-align: left; font-weight: 600; white-space: nowrap;
+}
+tbody tr:nth-child(even) { background: #f8f9fa; }
+tbody tr:hover { background: #e8f0fe; }
+tbody td { padding: 9px 12px; border-bottom: 1px solid #e8e8e8; vertical-align: middle; }
+tbody td input, tbody td select {
+  width: 100%; padding: 4px 8px; border: 1px solid #0d6efd;
+  border-radius: 4px; font-size: 13px; outline: none; background: #fff8e1;
+}
+.no-data { text-align: center; padding: 30px; color: #999; font-style: italic; }
+
+/* STATS CARDS */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: white; border-radius: 12px; padding: 20px;
+  text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-top: 4px solid;
+}
+.stat-card .stat-num { font-size: 32px; font-weight: 700; }
+.stat-card .stat-label { font-size: 12px; color: #666; margin-top: 4px; }
+
+/* SECTION LIST */
+.section-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.section-btn {
+  padding: 8px 16px; background: #e8f0fe; border: 2px solid #c5d8fb;
+  border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+  color: #1a3a5c; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.section-btn:hover, .section-btn.active { background: #0d6efd; border-color: #0d6efd; color: white; }
+.section-btn input.edit-title {
+  background: transparent; border: none; color: inherit; font-size: 13px;
+  font-weight: 600; outline: none; cursor: text; max-width: 120px;
+}
+
+/* ENERGY SUB TABS */
+.energy-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.energy-tab {
+  padding: 6px 14px; background: #e8f0fe; border: 2px solid #c5d8fb;
+  border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: #1a3a5c; transition: all 0.2s;
+}
+.energy-tab:hover { background: #c5d8fb; }
+.energy-tab.active { background: #0a9396; border-color: #0a9396; color: white; }
+
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 2000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 14px; padding: 28px;
+  width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal h3 { font-size: 18px; font-weight: 700; color: #1a3a5c; margin-bottom: 20px; }
+.modal .form-group { margin-bottom: 14px; }
+.modal .form-group label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #444; }
+.modal .form-group input, .modal .form-group textarea, .modal .form-group select {
+  width: 100%; padding: 9px 12px; border: 2px solid #e0e0e0;
+  border-radius: 7px; font-size: 14px; outline: none; font-family: inherit;
+}
+.modal .form-group input:focus, .modal .form-group textarea:focus { border-color: #0d6efd; }
+.modal .form-group textarea { resize: vertical; min-height: 80px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-240px); }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; }
+  .menu-toggle { display: block; }
+  .header h1 { font-size: 15px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* BADGE */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  font-size: 11px; font-weight: 700;
+}
+.badge-green { background: #d4edda; color: #155724; }
+.badge-red { background: #f8d7da; color: #721c24; }
+.badge-blue { background: #cce5ff; color: #004085; }
+.badge-yellow { background: #fff3cd; color: #856404; }
+
+.alpha-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.alpha-btn {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: #e8f0fe; border: 2px solid #c5d8fb; border-radius: 7px;
+  cursor: pointer; font-weight: 700; color: #1a3a5c; transition: all 0.2s;
+}
+.alpha-btn:hover, .alpha-btn.active { background: #0d6efd; border-color: #0d6efd; color: white; }
+
+.rh-admin-notice {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 2px solid #ffc107; border-radius: 10px; padding: 16px 20px;
+  margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+  font-weight: 600; color: #856404;
+}
+
+.conge-person {
+  background: #f8f9fa; border-radius: 10px; padding: 16px;
+  margin-bottom: 16px; border: 1px solid #e0e0e0;
+}
+.conge-person-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; cursor: pointer;
+}
+.conge-person-name { font-size: 15px; font-weight: 700; color: #1a3a5c; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="icon">🏢</span>
+      <h1>Gestion de Service</h1>
+      <p>Plateforme de centralisation des données</p>
+    </div>
+    <div class="login-error" id="loginError">Identifiant ou mot de passe incorrect</div>
+    <div class="form-group">
+      <label>Identifiant</label>
+      <input type="text" id="username" placeholder="Votre identifiant" />
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="password" placeholder="Votre mot de passe" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">🔐 Se connecter</button>
+    <div class="demo-info">
+      <strong>Admin :</strong> admin / admin123 &nbsp;|&nbsp; <strong>User :</strong> user / user123
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <span style="font-size:24px;">🏢</span>
+      <h1>Gestion de Service</h1>
+    </div>
+    <div class="header-right">
+      <span class="user-badge" id="headerUser"></span>
+      <span class="admin-badge" id="headerAdmin" style="display:none;">ADMIN</span>
+      <button class="btn-logout" onclick="doLogout()">⏻ Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="nav-section">Navigation</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span><span class="label">Tableau de Bord</span></div>
+    <div class="nav-item" onclick="showPage('repertoire')"><span class="icon">📒</span><span class="label">Répertoire</span></div>
+    <div class="nav-item" onclick="showPage('boucle')"><span class="icon">🔄</span><span class="label">Boucle Local & Régional</span></div>
+    <div class="nav-item" onclick="showPage('fmx')"><span class="icon">📡</span><span class="label">FMX Local & Régional</span></div>
+    <div class="nav-item" onclick="showPage('fibre')"><span class="icon">🔌</span><span class="label">Fibre et ODF</span></div>
+    <div class="nav-item" onclick="showPage('energie')"><span class="icon">⚡</span><span class="label">Énergie & Environnement</span></div>
+    <div class="nav-item" onclick="showPage('visite')"><span class="icon">👥</span><span class="label">Intervenants & Visiteurs</span></div>
+    <div class="nav-item" id="navRH" style="display:none;" onclick="showPage('rh')"><span class="icon">👤</span><span class="label">RH</span><span style="margin-left:auto;background:#ffd700;color:#1a3a5c;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700;">ADMIN</span></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content" id="mainContent">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">📊 Tableau de Bord</div>
+      <div class="stats-grid">
+        <div class="stat-card" style="border-color:#0d6efd;"><div class="stat-num" style="color:#0d6efd;" id="stat-contacts">0</div><div class="stat-label">📒 Contacts</div></div>
+        <div class="stat-card" style="border-color:#198754;"><div class="stat-num" style="color:#198754;" id="stat-boucle">0</div><div class="stat-label">🔄 Boucles</div></div>
+        <div class="stat-card" style="border-color:#ffc107;"><div class="stat-num" style="color:#ffc107;" id="stat-fmx">0</div><div class="stat-label">📡 FMX</div></div>
+        <div class="stat-card" style="border-color:#0a9396;"><div class="stat-num" style="color:#0a9396;" id="stat-fibre">0</div><div class="stat-label">🔌 Fibres</div></div>
+        <div class="stat-card" style="border-color:#dc3545;"><div class="stat-num" style="color:#dc3545;" id="stat-visites">0</div><div class="stat-label">👥 Visites</div></div>
+        <div class="stat-card" style="border-color:#6f42c1;"><div class="stat-num" style="color:#6f42c1;" id="stat-personnel">0</div><div class="stat-label">👤 Personnel</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔍 Recherche Globale</div>
+        <div class="search-bar">
+          <input type="text" id="globalSearch" placeholder="Rechercher dans toutes les données..." oninput="doGlobalSearch(this.value)" />
+        </div>
+        <div id="globalResults"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">ℹ️ Informations</div>
+        <p style="color:#555;font-size:14px;line-height:1.8;">
+          Bienvenue sur la plateforme de gestion centralisée.<br>
+          Utilisez le menu de gauche pour naviguer entre les différentes sections.<br>
+          <span id="adminInfo"></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- REPERTOIRE -->
+    <div class="page" id="page-repertoire">
+      <div class="page-title">📒 Répertoire</div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('rep','local',this)">🏠 Local</div>
+        <div class="tab" onclick="switchTab('rep','regional',this)">🌍 Régional</div>
+        <div class="tab" onclick="switchTab('rep','entreprise',this)">🏭 Entreprise AT Prestataire</div>
+      </div>
+
+      <!-- Local -->
+      <div class="tab-content active" id="rep-local">
+        <div class="card">
+          <div class="card-title">🏠 Répertoire Local</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-rep-local',this.value)">
+            <button class="btn btn-primary" id="btn-add-rep-local" onclick="openModal('modal-rep-local')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-rep-local">
+              <thead><tr><th>Nom</th><th>Fixe</th><th>Mobile</th><th>Email</th><th>Adresse</th><th>Observations</th><th id="th-rep-local-actions">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regional -->
+      <div class="tab-content" id="rep-regional">
+        <div class="card">
+          <div class="card-title">🌍 Répertoire Régional</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-rep-regional',this.value)">
+            <button class="btn btn-primary" id="btn-add-rep-regional" onclick="openModal('modal-rep-regional')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-rep-regional">
+              <thead><tr><th>Nom</th><th>Fixe</th><th>Mobile</th><th>Email</th><th>Adresse</th><th>Observations</th><th id="th-rep-regional-actions">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entreprise -->
+      <div class="tab-content" id="rep-entreprise">
+        <div class="card">
+          <div class="card-title">🏭 Entreprise AT Prestataire</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-rep-entreprise',this.value)">
+            <button class="btn btn-primary" id="btn-add-rep-entreprise" onclick="openModal('modal-rep-entreprise')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-rep-entreprise">
+              <thead><tr><th>Nom</th><th>Entreprise</th><th>Nature Intervention</th><th>Date</th><th>Observations</th><th id="th-rep-entreprise-actions">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOUCLE -->
+    <div class="page" id="page-boucle">
+      <div class="page-title">🔄 Boucle Local & Régional</div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('boucle','local',this)">🏠 Boucle Local</div>
+        <div class="tab" onclick="switchTab('boucle','regional',this)">🌍 Boucle Régional</div>
+      </div>
+      <div class="tab-content active" id="boucle-local">
+        <div class="card">
+          <div class="card-title">🏠 Boucle Local</div>
+          <div id="boucle-local-content"></div>
+        </div>
+      </div>
+      <div class="tab-content" id="boucle-regional">
+        <div class="card">
+          <div class="card-title">🌍 Boucle Régional</div>
+          <div id="boucle-regional-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FMX -->
+    <div class="page" id="page-fmx">
+      <div class="page-title">📡 FMX Local & Régional</div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('fmx','local',this)">🏠 FMX Local</div>
+        <div class="tab" onclick="switchTab('fmx','regional',this)">🌍 FMX Régional</div>
+      </div>
+      <div class="tab-content active" id="fmx-local">
+        <div class="card">
+          <div class="card-title">🏠 FMX Local</div>
+          <div id="fmx-local-content"></div>
+        </div>
+      </div>
+      <div class="tab-content" id="fmx-regional">
+        <div class="card">
+          <div class="card-title">🌍 FMX Régional</div>
+          <div id="fmx-regional-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIBRE -->
+    <div class="page" id="page-fibre">
+      <div class="page-title">🔌 Fibre et ODF</div>
+      <div class="card">
+        <div class="card-title">🔌 Gestion Fibre et ODF</div>
+        <div class="search-bar">
+          <input type="text" placeholder="Rechercher une fibre..." oninput="filterFibre(this.value)">
+          <button class="btn btn-primary" id="btn-add-fibre" onclick="openModal('modal-fibre')">➕ Ajouter</button>
+        </div>
+        <div class="alpha-grid" id="alphaGrid"></div>
+        <div id="fibre-content"></div>
+      </div>
+    </div>
+
+    <!-- ENERGIE -->
+    <div class="page" id="page-energie">
+      <div class="page-title">⚡ Énergie & Environnement</div>
+      <div class="tabs" id="energie-main-tabs">
+        <div class="tab active" onclick="switchEnergieMain('GE',this)">⚙️ GE</div>
+        <div class="tab" onclick="switchEnergieMain('CLIM',this)">❄️ CLIM</div>
+        <div class="tab" onclick="switchEnergieMain('ONDULAIRE',this)">🔋 ONDULAIRE</div>
+        <div class="tab" onclick="switchEnergieMain('BATTERIE',this)">🪫 BATTERIE</div>
+        <div class="tab" onclick="switchEnergieMain('ATELIER',this)">🏭 ATELIER ÉNERGIE</div>
+        <div class="tab" onclick="switchEnergieMain('48V',this)">⚡ 48V</div>
+      </div>
+      <div id="energie-content"></div>
+    </div>
+
+    <!-- VISITE -->
+    <div class="page" id="page-visite">
+      <div class="page-title">👥 Intervenants & Visiteurs</div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('visite','intervenant',this)">🔧 Intervenants</div>
+        <div class="tab" onclick="switchTab('visite','visiteurs',this)">👁️ Visiteurs</div>
+        <div class="tab" onclick="switchTab('visite','entreprise',this)">🏭 Entreprise AT Prestataire</div>
+      </div>
+      <div class="tab-content active" id="visite-intervenant">
+        <div class="card">
+          <div class="card-title">🔧 Intervenants</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-visite-intervenant',this.value)">
+            <button class="btn btn-primary" id="btn-add-visite-intervenant" onclick="openModal('modal-visite-intervenant')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-visite-intervenant">
+              <thead><tr><th>Nom</th><th>Service</th><th>Nature Intervention</th><th>Date</th><th>Observations</th><th id="th-visite-intervenant-actions">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="visite-visiteurs">
+        <div class="card">
+          <div class="card-title">👁️ Visiteurs</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-visite-visiteurs',this.value)">
+            <button class="btn btn-primary" id="btn-add-visite-visiteurs" onclick="openModal('modal-visite-visiteurs')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-visite-visiteurs">
+              <thead><tr><th>Nom</th><th>Structure</th><th>Nature Visite</th><th>Date</th><th>Observations</th><th id="th-visite-visiteurs-actions">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="visite-entreprise">
+        <div class="card">
+          <div class="card-title">🏭 Entreprise AT Prestataire</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-visite-entreprise',this.value)">
+            <button class="btn btn-primary" id="btn-add-visite-entreprise" onclick="openModal('modal-visite-entreprise')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-visite-entreprise">
+              <thead><tr><th>Nom</th><th>Entreprise</th><th>Nature Intervention</th><th>Date</th><th>Observations</th><th id="th-visite-entreprise-actions">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RH -->
+    <div class="page" id="page-rh">
+      <div class="page-title">👤 Ressources Humaines <span class="admin-badge" style="font-size:13px;">ADMIN ONLY</span></div>
+      <div class="rh-admin-notice">⚠️ Cette section est réservée exclusivement à l'administrateur.</div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('rh','personnel',this)">👤 Personnel</div>
+        <div class="tab" onclick="switchTab('rh','formation',this)">📚 Formation</div>
+        <div class="tab" onclick="switchTab('rh','conge',this)">🏖️ Congé</div>
+      </div>
+      <div class="tab-content active" id="rh-personnel">
+        <div class="card">
+          <div class="card-title">👤 Personnel</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-rh-personnel',this.value)">
+            <button class="btn btn-primary" onclick="openModal('modal-rh-personnel')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-rh-personnel">
+              <thead><tr><th>Nom</th><th>Matricule</th><th>Grade</th><th>Date Recrutement</th><th>Email</th><th>Adresse</th><th>Mobile</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="rh-formation">
+        <div class="card">
+          <div class="card-title">📚 Formation</div>
+          <div class="search-bar">
+            <input type="text" placeholder="Rechercher..." oninput="filterTable('tbl-rh-formation',this.value)">
+            <button class="btn btn-primary" onclick="openModal('modal-rh-formation')">➕ Ajouter</button>
+          </div>
+          <div class="table-container">
+            <table id="tbl-rh-formation">
+              <thead><tr><th>Nom</th><th>Formation</th><th>Date</th><th>Lieu</th><th>Besoin</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="rh-conge">
+        <div class="card">
+          <div class="card-title">🏖️ Congé</div>
+          <div class="search-bar" style="margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="openModal('modal-add-conge-person')">➕ Ajouter une personne</button>
+          </div>
+          <div id="conge-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+</div><!-- end appScreen -->
+
+<!-- MODALS -->
+<!-- Rep Local -->
+<div class="modal-overlay" id="modal-rep-local">
+  <div class="modal">
+    <h3>➕ Ajouter un contact Local</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="rl-nom"></div>
+    <div class="form-group"><label>Fixe</label><input type="text" id="rl-fix"></div>
+    <div class="form-group"><label>Mobile</label><input type="text" id="rl-mobile"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="rl-mail"></div>
+    <div class="form-group"><label>Adresse</label><input type="text" id="rl-adresse"></div>
+    <div class="form-group"><label>Observations</label><textarea id="rl-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-rep-local')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('rep-local')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rep Regional -->
+<div class="modal-overlay" id="modal-rep-regional">
+  <div class="modal">
+    <h3>➕ Ajouter un contact Régional</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="rr-nom"></div>
+    <div class="form-group"><label>Fixe</label><input type="text" id="rr-fix"></div>
+    <div class="form-group"><label>Mobile</label><input type="text" id="rr-mobile"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="rr-mail"></div>
+    <div class="form-group"><label>Adresse</label><input type="text" id="rr-adresse"></div>
+    <div class="form-group"><label>Observations</label><textarea id="rr-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-rep-regional')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('rep-regional')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rep Entreprise -->
+<div class="modal-overlay" id="modal-rep-entreprise">
+  <div class="modal">
+    <h3>➕ Ajouter Entreprise AT Prestataire</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="re-nom"></div>
+    <div class="form-group"><label>Entreprise</label><input type="text" id="re-entreprise"></div>
+    <div class="form-group"><label>Nature Intervention</label><input type="text" id="re-nature"></div>
+    <div class="form-group"><label>Date</label><input type="date" id="re-date"></div>
+    <div class="form-group"><label>Observations</label><textarea id="re-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-rep-entreprise')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('rep-entreprise')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Boucle Row -->
+<div class="modal-overlay" id="modal-boucle-row">
+  <div class="modal" style="max-width:700px;">
+    <h3>➕ Ajouter une ligne Boucle</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Position A</label><input type="text" id="br-posA"></div>
+      <div class="form-group"><label>Slot A</label><input type="text" id="br-slotA"></div>
+      <div class="form-group"><label>EX A</label><input type="text" id="br-exA"></div>
+      <div class="form-group"><label>Position B</label><input type="text" id="br-posB"></div>
+      <div class="form-group"><label>Slot B</label><input type="text" id="br-slotB"></div>
+      <div class="form-group"><label>EX B</label><input type="text" id="br-exB"></div>
+    </div>
+    <div class="form-group"><label>Observations</label><textarea id="br-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-boucle-row')">Annuler</button>
+      <button class="btn btn-primary" onclick="addBoucleRow()">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- FMX Row -->
+<div class="modal-overlay" id="modal-fmx-row">
+  <div class="modal">
+    <h3>➕ Ajouter une ligne FMX</h3>
+    <div class="form-group"><label>Position</label><input type="text" id="fr-pos"></div>
+    <div class="form-group"><label>EX A</label><input type="text" id="fr-exA"></div>
+    <div class="form-group"><label>EX B</label><input type="text" id="fr-exB"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-fmx-row')">Annuler</button>
+      <button class="btn btn-primary" onclick="addFmxRow()">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fibre -->
+<div class="modal-overlay" id="modal-fibre">
+  <div class="modal" style="max-width:640px;">
+    <h3>➕ Ajouter une Fibre / ODF</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Lettre</label><input type="text" id="fib-lettre" maxlength="1" style="text-transform:uppercase;"></div>
+      <div class="form-group"><label>Paires</label><input type="text" id="fib-paires"></div>
+      <div class="form-group"><label>EX A</label><input type="text" id="fib-exA"></div>
+      <div class="form-group"><label>N° ODF A</label><input type="text" id="fib-odfA"></div>
+      <div class="form-group"><label>Étage A</label><input type="text" id="fib-etageA"></div>
+      <div class="form-group"><label>EX B</label><input type="text" id="fib-exB"></div>
+      <div class="form-group"><label>N° ODF B</label><input type="text" id="fib-odfB"></div>
+      <div class="form-group"><label>Étage B</label><input type="text" id="fib-etageB"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="fib-date"></div>
+      <div class="form-group"><label>Intervenant</label><input type="text" id="fib-intervenant"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-fibre')">Annuler</button>
+      <button class="btn btn-primary" onclick="addFibre()">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Energie Row -->
+<div class="modal-overlay" id="modal-energie-row">
+  <div class="modal" style="max-width:680px;">
+    <h3 id="modal-energie-title">➕ Ajouter</h3>
+    <div id="modal-energie-fields"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-energie-row')">Annuler</button>
+      <button class="btn btn-primary" onclick="addEnergieRow()">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Visite Intervenant -->
+<div class="modal-overlay" id="modal-visite-intervenant">
+  <div class="modal">
+    <h3>➕ Ajouter un Intervenant</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="vi-nom"></div>
+    <div class="form-group"><label>Service</label><input type="text" id="vi-service"></div>
+    <div class="form-group"><label>Nature Intervention</label><input type="text" id="vi-nature"></div>
+    <div class="form-group"><label>Date</label><input type="date" id="vi-date"></div>
+    <div class="form-group"><label>Observations</label><textarea id="vi-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-visite-intervenant')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('visite-intervenant')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Visite Visiteurs -->
+<div class="modal-overlay" id="modal-visite-visiteurs">
+  <div class="modal">
+    <h3>➕ Ajouter un Visiteur</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="vv-nom"></div>
+    <div class="form-group"><label>Structure</label><input type="text" id="vv-structure"></div>
+    <div class="form-group"><label>Nature Visite</label><input type="text" id="vv-nature"></div>
+    <div class="form-group"><label>Date</label><input type="date" id="vv-date"></div>
+    <div class="form-group"><label>Observations</label><textarea id="vv-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-visite-visiteurs')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('visite-visiteurs')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Visite Entreprise -->
+<div class="modal-overlay" id="modal-visite-entreprise">
+  <div class="modal">
+    <h3>➕ Ajouter Entreprise AT Prestataire</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="ve-nom"></div>
+    <div class="form-group"><label>Entreprise</label><input type="text" id="ve-entreprise"></div>
+    <div class="form-group"><label>Nature Intervention</label><input type="text" id="ve-nature"></div>
+    <div class="form-group"><label>Date</label><input type="date" id="ve-date"></div>
+    <div class="form-group"><label>Observations</label><textarea id="ve-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-visite-entreprise')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('visite-entreprise')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- RH Personnel -->
+<div class="modal-overlay" id="modal-rh-personnel">
+  <div class="modal">
+    <h3>➕ Ajouter un Personnel</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="rh-nom"></div>
+    <div class="form-group"><label>Matricule</label><input type="text" id="rh-matricule"></div>
+    <div class="form-group"><label>Grade</label><input type="text" id="rh-grade"></div>
+    <div class="form-group"><label>Date de Recrutement</label><input type="date" id="rh-date"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="rh-email"></div>
+    <div class="form-group"><label>Adresse</label><input type="text" id="rh-adresse"></div>
+    <div class="form-group"><label>Mobile</label><input type="text" id="rh-mobile"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-rh-personnel')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('rh-personnel')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- RH Formation -->
+<div class="modal-overlay" id="modal-rh-formation">
+  <div class="modal">
+    <h3>➕ Ajouter une Formation</h3>
+    <div class="form-group"><label>Nom</label><input type="text" id="rhf-nom"></div>
+    <div class="form-group"><label>Formation</label><input type="text" id="rhf-formation"></div>
+    <div class="form-group"><label>Date</label><input type="date" id="rhf-date"></div>
+    <div class="form-group"><label>Lieu</label><input type="text" id="rhf-lieu"></div>
+    <div class="form-group"><label>Besoin</label><input type="text" id="rhf-besoin"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-rh-formation')">Annuler</button>
+      <button class="btn btn-primary" onclick="addRow('rh-formation')">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Conge Person -->
+<div class="modal-overlay" id="modal-add-conge-person">
+  <div class="modal">
+    <h3>➕ Ajouter une personne au Congé</h3>
+    <div class="form-group"><label>Nom complet</label><input type="text" id="cp-nom"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-conge-person')">Annuler</button>
+      <button class="btn btn-primary" onclick="addCongePerson()">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Conge Row -->
+<div class="modal-overlay" id="modal-add-conge-row">
+  <div class="modal">
+    <h3>➕ Ajouter une période de congé</h3>
+    <div class="form-group"><label>Date de début</label><input type="date" id="cr-debut"></div>
+    <div class="form-group"><label>Date de fin</label><input type="date" id="cr-fin"></div>
+    <div class="form-group"><label>Durée (jours)</label><input type="number" id="cr-duree"></div>
+    <div class="form-group"><label>Reste</label><input type="number" id="cr-reste"></div>
+    <div class="form-group"><label>Observations</label><textarea id="cr-obs"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-conge-row')">Annuler</button>
+      <button class="btn btn-primary" onclick="addCongeRow()">✅ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="modal-overlay" id="modal-confirm-delete">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <h3>⚠️ Confirmation</h3>
+    <p style="margin:16px 0;color:#555;">Voulez-vous vraiment supprimer cet élément ?</p>
+    <div class="modal-btns" style="justify-content:center;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-confirm-delete')">Annuler</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">🗑️ Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== STATE ====================
+let currentUser = null;
+let isAdmin = false;
+let DB = {};
+let currentBoucleType = null;
+let currentBoucleSection = null;
+let currentFmxType = null;
+let currentFmxSection = null;
+let currentFibreLetter = 'A';
+let currentEnergieType = 'GE';
+let currentEnergieMatiere = 'ETAT';
+let currentDeleteFn = null;
+let currentCongePersonIdx = null;
+
+const USERS = {
+  'admin': { password: 'admin123', role: 'admin', name: 'Administrateur' },
+  'user':  { password: 'user123',  role: 'user',  name: 'Utilisateur' }
+};
+
+function initDB() {
+  const saved = localStorage.getItem('gestion_service_db');
+  if (saved) { DB = JSON.parse(saved); }
+  // Ensure all keys exist
+  const defaults = {
+    'rep-local': [], 'rep-regional': [], 'rep-entreprise': [],
+    'boucle-local': {}, 'boucle-regional': {},
+    'fmx-local': {}, 'fmx-regional': {},
+    'fibre': [],
+    'energie': {},
+    'visite-intervenant': [], 'visite-visiteurs': [], 'visite-entreprise': [],
+    'rh-personnel': [], 'rh-formation': [], 'rh-conge': []
+  };
+  for (const k in defaults) {
+    if (DB[k] === undefined) DB[k] = defaults[k];
+  }
+  // Init boucle sections
+  if (!DB['boucle-local']['Section 1']) DB['boucle-local']['Section 1'] = [];
+  if (!DB['boucle-regional']['Section 1']) DB['boucle-regional']['Section 1'] = [];
+  // Init FMX sections
+  if (!DB['fmx-local']['FMX 1']) DB['fmx-local']['FMX 1'] = [];
+  if (!DB['fmx-regional']['FMX 1']) DB['fmx-regional']['FMX 1'] = [];
+  // Init energie
+  ['GE','CLIM','ONDULAIRE','BATTERIE','ATELIER','48V'].forEach(type => {
+    if (!DB['energie'][type]) DB['energie'][type] = {};
+    ['ETAT','INTERVENTION','DERANGEMENT'].forEach(mat => {
+      if (!DB['energie'][type][mat]) DB['energie'][type][mat] = [];
+    });
+  });
+  saveDB();
+}
+
+function saveDB() {
+  localStorage.setItem('gestion_service_db', JSON.stringify(DB));
+  updateStats();
+}
+
+// ==================== AUTH ====================
+function doLogin() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  const err = document.getElementById('loginError');
+  if (USERS[u] && USERS[u].password === p) {
+    currentUser = USERS[u];
+    isAdmin = currentUser.role === 'admin';
+    err.style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+    document.getElementById('headerUser').textContent = '👤 ' + currentUser.name;
+    document.getElementById('headerAdmin').style.display = isAdmin ? 'inline-block' : 'none';
+    document.getElementById('navRH').style.display = isAdmin ? 'flex' : 'none';
+    document.getElementById('adminInfo').textContent = isAdmin
+      ? 'Vous êtes connecté en tant qu\'administrateur. Vous avez accès à toutes les fonctionnalités.'
+      : 'Vous êtes connecté en lecture seule. Seul l\'administrateur peut modifier les données.';
+    setupAdminButtons();
+    initApp();
+  } else {
+    err.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  currentUser = null; isAdmin = false;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+}
+
+function setupAdminButtons() {
+  // Show/hide add buttons
+  const adminBtns = ['btn-add-rep-local','btn-add-rep-regional','btn-add-rep-entreprise',
+    'btn-add-visite-intervenant','btn-add-visite-visiteurs','btn-add-visite-entreprise','btn-add-fibre'];
+  adminBtns.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? 'inline-flex' : 'none';
+  });
+  // Hide action columns for non-admin
+  const actionThs = document.querySelectorAll('[id^="th-"]');
+  actionThs.forEach(th => { if (!isAdmin) th.style.display = 'none'; });
+}
+
+// ==================== NAVIGATION ====================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + page + "'")) n.classList.add('active');
+  });
+  if (page === 'boucle') renderBoucle();
+  if (page === 'fmx') renderFmx();
+  if (page === 'fibre') renderFibre();
+  if (page === 'energie') renderEnergie();
+  if (page === 'rh') renderConge();
+  // close sidebar on mobile
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('open');
+}
+
+function switchTab(group, tab, el) {
+  const parent = el.closest('.page') || document.body;
+  parent.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  parent.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+  const tc = document.getElementById(group + '-' + tab);
+  if (tc) tc.classList.add('active');
+}
+
+// ==================== GENERIC TABLE ====================
+function renderTable(tableId, data, columns) {
+  const tbody = document.querySelector('#' + tableId + ' tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="99" class="no-data">Aucune donnée disponible</td></tr>';
+    return;
+  }
+  data.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-idx', idx);
+    let cells = columns.map(col => {
+      const val = row[col] || '';
+      if (isAdmin) {
+        return `<td><input type="text" value="${escHtml(val)}" onchange="updateCell('${tableId}',${idx},'${col}',this.value)"></td>`;
+      }
+      return `<td>${escHtml(val)}</td>`;
+    });
+    if (isAdmin) {
+      cells.push(`<td><button class="btn btn-danger btn-sm" onclick="deleteRowConfirm('${tableId}',${idx})">🗑️</button></td>`);
+    }
+    tr.innerHTML = cells.join('');
+    tbody.appendChild(tr);
+  });
+}
+
+function updateCell(tableId, idx, col, val) {
+  const key = tableIdToKey(tableId);
+  if (Array.isArray(DB[key])) {
+    DB[key][idx][col] = val;
+  }
+  saveDB();
+}
+
+function tableIdToKey(tableId) {
+  return tableId.replace('tbl-', '');
+}
+
+function filterTable(tableId, val) {
+  const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+  const q = val.toLowerCase();
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+
+function deleteRowConfirm(tableId, idx) {
+  currentDeleteFn = () => {
+    const key = tableIdToKey(tableId);
+    if (Array.isArray(DB[key])) DB[key].splice(idx, 1);
+    saveDB();
+    renderAllTables();
+    closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+function confirmDelete() { if (currentDeleteFn) currentDeleteFn(); }
+
+function renderAllTables() {
+  renderTable('tbl-rep-local', DB['rep-local'], ['nom','fix','mobile','mail','adresse','obs']);
+  renderTable('tbl-rep-regional', DB['rep-regional'], ['nom','fix','mobile','mail','adresse','obs']);
+  renderTable('tbl-rep-entreprise', DB['rep-entreprise'], ['nom','entreprise','nature','date','obs']);
+  renderTable('tbl-visite-intervenant', DB['visite-intervenant'], ['nom','service','nature','date','obs']);
+  renderTable('tbl-visite-visiteurs', DB['visite-visiteurs'], ['nom','structure','nature','date','obs']);
+  renderTable('tbl-visite-entreprise', DB['visite-entreprise'], ['nom','entreprise','nature','date','obs']);
+  renderTable('tbl-rh-personnel', DB['rh-personnel'], ['nom','matricule','grade','date','email','adresse','mobile']);
+  renderTable('tbl-rh-formation', DB['rh-formation'], ['nom','formation','date','lieu','besoin']);
+}
+
+// ==================== ADD ROW ====================
+function addRow(key) {
+  let row = {};
+  if (key === 'rep-local') {
+    row = { nom: v('rl-nom'), fix: v('rl-fix'), mobile: v('rl-mobile'), mail: v('rl-mail'), adresse: v('rl-adresse'), obs: v('rl-obs') };
+    closeModal('modal-rep-local');
+  } else if (key === 'rep-regional') {
+    row = { nom: v('rr-nom'), fix: v('rr-fix'), mobile: v('rr-mobile'), mail: v('rr-mail'), adresse: v('rr-adresse'), obs: v('rr-obs') };
+    closeModal('modal-rep-regional');
+  } else if (key === 'rep-entreprise') {
+    row = { nom: v('re-nom'), entreprise: v('re-entreprise'), nature: v('re-nature'), date: v('re-date'), obs: v('re-obs') };
+    closeModal('modal-rep-entreprise');
+  } else if (key === 'visite-intervenant') {
+    row = { nom: v('vi-nom'), service: v('vi-service'), nature: v('vi-nature'), date: v('vi-date'), obs: v('vi-obs') };
+    closeModal('modal-visite-intervenant');
+  } else if (key === 'visite-visiteurs') {
+    row = { nom: v('vv-nom'), structure: v('vv-structure'), nature: v('vv-nature'), date: v('vv-date'), obs: v('vv-obs') };
+    closeModal('modal-visite-visiteurs');
+  } else if (key === 'visite-entreprise') {
+    row = { nom: v('ve-nom'), entreprise: v('ve-entreprise'), nature: v('ve-nature'), date: v('ve-date'), obs: v('ve-obs') };
+    closeModal('modal-visite-entreprise');
+  } else if (key === 'rh-personnel') {
+    row = { nom: v('rh-nom'), matricule: v('rh-matricule'), grade: v('rh-grade'), date: v('rh-date'), email: v('rh-email'), adresse: v('rh-adresse'), mobile: v('rh-mobile') };
+    closeModal('modal-rh-personnel');
+  } else if (key === 'rh-formation') {
+    row = { nom: v('rhf-nom'), formation: v('rhf-formation'), date: v('rhf-date'), lieu: v('rhf-lieu'), besoin: v('rhf-besoin') };
+    closeModal('modal-rh-formation');
+  }
+  DB[key].push(row);
+  saveDB();
+  renderAllTables();
+}
+
+// ==================== BOUCLE ====================
+function renderBoucle() {
+  renderBoucleSection('local');
+  renderBoucleSection('regional');
+}
+
+function renderBoucleSection(type) {
+  const container = document.getElementById('boucle-' + type + '-content');
+  if (!container) return;
+  const sections = DB['boucle-' + type];
+  const names = Object.keys(sections);
+  let html = '';
+  if (isAdmin) {
+    html += `<div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="addBoucleSection('${type}')">➕ Nouvelle Section</button>
+    </div>`;
+  }
+  html += `<div class="search-bar"><input type="text" placeholder="Rechercher dans les sections..." oninput="filterBoucle('${type}',this.value)"></div>`;
+  html += `<div class="section-list" id="boucle-${type}-sections">`;
+  names.forEach((name, i) => {
+    html += `<div class="section-btn ${i===0?'active':''}" onclick="selectBoucleSection('${type}','${name}',this)" id="bsec-${type}-${i}">${isAdmin ? `<span contenteditable="true" onblur="renameBoucleSection('${type}','${name}',this.textContent)">${escHtml(name)}</span>` : escHtml(name)}</div>`;
+  });
+  html += `</div>`;
+  if (names.length > 0) {
+    const firstSection = names[0];
+    html += renderBoucleTable(type, firstSection);
+  }
+  container.innerHTML = html;
+  if (names.length > 0) {
+    currentBoucleType = type;
+    currentBoucleSection = names[0];
+  }
+}
+
+function renderBoucleTable(type, section) {
+  const rows = DB['boucle-' + type][section] || [];
+  let html = `<div id="boucle-${type}-table-area">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <strong style="color:#1a3a5c;">📋 ${escHtml(section)}</strong>
+      ${isAdmin ? `<button class="btn btn-success btn-sm" onclick="currentBoucleType='${type}';currentBoucleSection='${section}';openModal('modal-boucle-row')">➕ Ajouter ligne</button>` : ''}
+    </div>
+    <div class="table-container">
+      <table id="tbl-boucle-${type}-${sanitize(section)}">
+        <thead><tr>
+          <th>Position A</th><th>Slot A</th><th>EX A</th>
+          <th>Position B</th><th>Slot B</th><th>EX B</th>
+          <th>Observations</th>${isAdmin ? '<th>Actions</th>' : ''}
+        </tr></thead>
+        <tbody>`;
+  if (rows.length === 0) {
+    html += `<tr><td colspan="8" class="no-data">Aucune donnée</td></tr>`;
+  } else {
+    rows.forEach((row, idx) => {
+      html += `<tr>`;
+      ['posA','slotA','exA','posB','slotB','exB','obs'].forEach(col => {
+        if (isAdmin) html += `<td><input type="text" value="${escHtml(row[col]||'')}" onchange="updateBoucleCell('${type}','${section}',${idx},'${col}',this.value)"></td>`;
+        else html += `<td>${escHtml(row[col]||'')}</td>`;
+      });
+      if (isAdmin) html += `<td><button class="btn btn-danger btn-sm" onclick="deleteBoucleRow('${type}','${section}',${idx})">🗑️</button></td>`;
+      html += `</tr>`;
+    });
+  }
+  html += `</tbody></table></div></div>`;
+  return html;
+}
+
+function selectBoucleSection(type, section, el) {
+  document.querySelectorAll('#boucle-' + type + '-sections .section-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentBoucleType = type;
+  currentBoucleSection = section;
+  const area = document.getElementById('boucle-' + type + '-table-area');
+  if (area) area.outerHTML = renderBoucleTable(type, section);
+  else {
+    const container = document.getElementById('boucle-' + type + '-content');
+    const div = document.createElement('div');
+    div.innerHTML = renderBoucleTable(type, section);
+    container.appendChild(div.firstChild);
+  }
+}
+
+function addBoucleSection(type) {
+  const name = 'Section ' + (Object.keys(DB['boucle-' + type]).length + 1);
+  DB['boucle-' + type][name] = [];
+  saveDB();
+  renderBoucleSection(type);
+}
+
+function renameBoucleSection(type, oldName, newName) {
+  newName = newName.trim();
+  if (!newName || newName === oldName) return;
+  const data = DB['boucle-' + type][oldName];
+  delete DB['boucle-' + type][oldName];
+  DB['boucle-' + type][newName] = data;
+  saveDB();
+}
+
+function addBoucleRow() {
+  const row = { posA: v('br-posA'), slotA: v('br-slotA'), exA: v('br-exA'), posB: v('br-posB'), slotB: v('br-slotB'), exB: v('br-exB'), obs: v('br-obs') };
+  DB['boucle-' + currentBoucleType][currentBoucleSection].push(row);
+  saveDB();
+  closeModal('modal-boucle-row');
+  renderBoucleSection(currentBoucleType);
+}
+
+function updateBoucleCell(type, section, idx, col, val) {
+  DB['boucle-' + type][section][idx][col] = val;
+  saveDB();
+}
+
+function deleteBoucleRow(type, section, idx) {
+  currentDeleteFn = () => {
+    DB['boucle-' + type][section].splice(idx, 1);
+    saveDB();
+    renderBoucleSection(type);
+    closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+function filterBoucle(type, val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('#boucle-' + type + '-sections .section-btn').forEach(btn => {
+    btn.style.display = btn.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ==================== FMX ====================
+function renderFmx() {
+  renderFmxSection('local');
+  renderFmxSection('regional');
+}
+
+function renderFmxSection(type) {
+  const container = document.getElementById('fmx-' + type + '-content');
+  if (!container) return;
+  const sections = DB['fmx-' + type];
+  const names = Object.keys(sections);
+  let html = '';
+  if (isAdmin) {
+    html += `<div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="addFmxSection('${type}')">➕ Nouveau FMX</button></div>`;
+  }
+  html += `<div class="search-bar"><input type="text" placeholder="Rechercher FMX..." oninput="filterFmxSections('${type}',this.value)"></div>`;
+  html += `<div class="section-list" id="fmx-${type}-sections">`;
+  names.forEach((name, i) => {
+    html += `<div class="section-btn ${i===0?'active':''}" onclick="selectFmxSection('${type}','${name}',this)">${isAdmin ? `<span contenteditable="true" onblur="renameFmxSection('${type}','${name}',this.textContent)">${escHtml(name)}</span>` : escHtml(name)}</div>`;
+  });
+  html += `</div>`;
+  if (names.length > 0) html += renderFmxTable(type, names[0]);
+  container.innerHTML = html;
+  currentFmxType = type;
+  currentFmxSection = names[0];
+}
+
+function renderFmxTable(type, section) {
+  const rows = DB['fmx-' + type][section] || [];
+  let html = `<div id="fmx-${type}-table-area">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <strong style="color:#1a3a5c;">📡 ${escHtml(section)}</strong>
+      ${isAdmin ? `<button class="btn btn-success btn-sm" onclick="currentFmxType='${type}';currentFmxSection='${section}';openModal('modal-fmx-row')">➕ Ajouter ligne</button>` : ''}
+    </div>
+    <div class="table-container"><table>
+      <thead><tr><th>Position</th><th>EX A</th><th>EX B</th>${isAdmin ? '<th>Actions</th>' : ''}</tr></thead>
+      <tbody>`;
+  if (rows.length === 0) html += `<tr><td colspan="4" class="no-data">Aucune donnée</td></tr>`;
+  else rows.forEach((row, idx) => {
+    html += `<tr>`;
+    ['pos','exA','exB'].forEach(col => {
+      if (isAdmin) html += `<td><input type="text" value="${escHtml(row[col]||'')}" onchange="updateFmxCell('${type}','${section}',${idx},'${col}',this.value)"></td>`;
+      else html += `<td>${escHtml(row[col]||'')}</td>`;
+    });
+    if (isAdmin) html += `<td><button class="btn btn-danger btn-sm" onclick="deleteFmxRow('${type}','${section}',${idx})">🗑️</button></td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+  return html;
+}
+
+function selectFmxSection(type, section, el) {
+  document.querySelectorAll('#fmx-' + type + '-sections .section-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentFmxType = type;
+  currentFmxSection = section;
+  const old = document.getElementById('fmx-' + type + '-table-area');
+  const newHtml = renderFmxTable(type, section);
+  if (old) { const d = document.createElement('div'); d.innerHTML = newHtml; old.replaceWith(d.firstChild); }
+  else document.getElementById('fmx-' + type + '-content').insertAdjacentHTML('beforeend', newHtml);
+}
+
+function addFmxSection(type) {
+  const name = 'FMX ' + (Object.keys(DB['fmx-' + type]).length + 1);
+  DB['fmx-' + type][name] = [];
+  saveDB();
+  renderFmxSection(type);
+}
+
+function renameFmxSection(type, oldName, newName) {
+  newName = newName.trim();
+  if (!newName || newName === oldName) return;
+  const data = DB['fmx-' + type][oldName];
+  delete DB['fmx-' + type][oldName];
+  DB['fmx-' + type][newName] = data;
+  saveDB();
+}
+
+function addFmxRow() {
+  const row = { pos: v('fr-pos'), exA: v('fr-exA'), exB: v('fr-exB') };
+  DB['fmx-' + currentFmxType][currentFmxSection].push(row);
+  saveDB();
+  closeModal('modal-fmx-row');
+  renderFmxSection(currentFmxType);
+}
+
+function updateFmxCell(type, section, idx, col, val) {
+  DB['fmx-' + type][section][idx][col] = val; saveDB();
+}
+
+function deleteFmxRow(type, section, idx) {
+  currentDeleteFn = () => {
+    DB['fmx-' + type][section].splice(idx, 1);
+    saveDB(); renderFmxSection(type); closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+function filterFmxSections(type, val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('#fmx-' + type + '-sections .section-btn').forEach(btn => {
+    btn.style.display = btn.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ==================== FIBRE ====================
+function renderFibre() {
+  const alphaGrid = document.getElementById('alphaGrid');
+  alphaGrid.innerHTML = '';
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letter => {
+    const btn = document.createElement('div');
+    btn.className = 'alpha-btn' + (letter === currentFibreLetter ? ' active' : '');
+    btn.textContent = letter;
+    btn.onclick = () => { currentFibreLetter = letter; renderFibre(); };
+    alphaGrid.appendChild(btn);
+  });
+  renderFibreTable();
+}
+
+function renderFibreTable() {
+  const container = document.getElementById('fibre-content');
+  const rows = DB['fibre'].filter(r => (r.lettre||'').toUpperCase() === currentFibreLetter);
+  const allIdx = DB['fibre'].reduce((acc, r, i) => { if ((r.lettre||'').toUpperCase() === currentFibreLetter) acc.push(i); return acc; }, []);
+  let html = `<div class="card-title" style="margin-top:12px;">🔌 Lettre ${currentFibreLetter}</div>
+    ${isAdmin ? `<button class="btn btn-success btn-sm" style="margin-bottom:12px;" onclick="openModal('modal-fibre')">➕ Ajouter</button>` : ''}
+    <div class="table-container"><table>
+      <thead><tr><th>Paires</th><th>EX A</th><th>N° ODF A</th><th>Étage A</th><th>EX B</th><th>N° ODF B</th><th>Étage B</th><th>Date</th><th>Intervenant</th>${isAdmin ? '<th>Actions</th>' : ''}</tr></thead>
+      <tbody>`;
+  if (rows.length === 0) html += `<tr><td colspan="10" class="no-data">Aucune fibre pour la lettre ${currentFibreLetter}</td></tr>`;
+  else rows.forEach((row, i) => {
+    const realIdx = allIdx[i];
+    html += `<tr>`;
+    ['paires','exA','odfA','etageA','exB','odfB','etageB','date','intervenant'].forEach(col => {
+      if (isAdmin) html += `<td><input type="text" value="${escHtml(row[col]||'')}" onchange="updateFibreCell(${realIdx},'${col}',this.value)"></td>`;
+      else html += `<td>${escHtml(row[col]||'')}</td>`;
+    });
+    if (isAdmin) html += `<td><button class="btn btn-danger btn-sm" onclick="deleteFibre(${realIdx})">🗑️</button></td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+function addFibre() {
+  const lettre = (v('fib-lettre') || 'A').toUpperCase();
+  DB['fibre'].push({
+    lettre, paires: v('fib-paires'), exA: v('fib-exA'), odfA: v('fib-odfA'), etageA: v('fib-etageA'),
+    exB: v('fib-exB'), odfB: v('fib-odfB'), etageB: v('fib-etageB'), date: v('fib-date'), intervenant: v('fib-intervenant')
+  });
+  currentFibreLetter = lettre;
+  saveDB();
+  closeModal('modal-fibre');
+  renderFibre();
+}
+
+function updateFibreCell(idx, col, val) { DB['fibre'][idx][col] = val; saveDB(); }
+
+function deleteFibre(idx) {
+  currentDeleteFn = () => {
+    DB['fibre'].splice(idx, 1);
+    saveDB(); renderFibre(); closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+function filterFibre(val) {
+  const q = val.toLowerCase();
+  if (!q) { renderFibreTable(); return; }
+  const container = document.getElementById('fibre-content');
+  const rows = DB['fibre'];
+  let html = `<div class="table-container"><table>
+    <thead><tr><th>Lettre</th><th>Paires</th><th>EX A</th><th>N° ODF A</th><th>Étage A</th><th>EX B</th><th>N° ODF B</th><th>Étage B</th><th>Date</th><th>Intervenant</th></tr></thead><tbody>`;
+  let found = 0;
+  rows.forEach(row => {
+    if (Object.values(row).join(' ').toLowerCase().includes(q)) {
+      html += `<tr><td>${row.lettre||''}</td><td>${row.paires||''}</td><td>${row.exA||''}</td><td>${row.odfA||''}</td><td>${row.etageA||''}</td><td>${row.exB||''}</td><td>${row.odfB||''}</td><td>${row.etageB||''}</td><td>${row.date||''}</td><td>${row.intervenant||''}</td></tr>`;
+      found++;
+    }
+  });
+  if (!found) html += `<tr><td colspan="10" class="no-data">Aucun résultat</td></tr>`;
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+// ==================== ENERGIE ====================
+const energieConfig = {
+  GE: {
+    ETAT: ['marque','dateMES','etat','obs'],
+    INTERVENTION: ['date','test','index','batterie','fuel','huile','eau','obs'],
+    DERANGEMENT: ['date','coupureSecteur','defautDemarrage','anomalie','serviceAvise','obs']
+  },
+  CLIM: {
+    ETAT: ['marque','dateMES','etat','obs'],
+    INTERVENTION: ['marque','date','in','out','obs'],
+    DERANGEMENT: ['marque','date','natureDefault','anomalie','serviceAvise','obs']
+  },
+  ONDULAIRE: {
+    ETAT: ['marque','dateMES','etat','obs'],
+    INTERVENTION: ['date','maintenance','batterie','obs'],
+    DERANGEMENT: ['date','coupureSecteur','defautDemarrage','anomalie','serviceAvise','obs']
+  },
+  BATTERIE: {
+    ETAT: ['marque','dateMES','etat','obs'],
+    INTERVENTION: ['date','test','obs'],
+    DERANGEMENT: ['date','impact','anomalie','serviceAvise','obs']
+  },
+  ATELIER: {
+    ETAT: ['marque','dateMES','etat','obs'],
+    INTERVENTION: ['date','maintenance','consommation','obs'],
+    DERANGEMENT: ['date','coupureSecteur','defautModule','anomalie','serviceAvise','obs']
+  },
+  '48V': {
+    ETAT: ['marque','dateMES','etat','obs'],
+    INTERVENTION: ['date','maintenance','obs'],
+    DERANGEMENT: ['date','coupureSecteur','anomalie','serviceAvise','obs']
+  }
+};
+
+const colLabels = {
+  marque:'MARQUE', dateMES:'Date MES', etat:'État', obs:'Observations',
+  date:'Date', test:'Test', index:'Index', batterie:'Batterie', fuel:'Fuel', huile:'Huile', eau:'Eau',
+  coupureSecteur:'Coupure Secteur', defautDemarrage:'Défaut Démarrage', anomalie:'Anomalie', serviceAvise:'Service Avisé',
+  in:'IN', out:'OUT', natureDefault:'Nature Défaut',
+  maintenance:'MAINTENANCE', impact:'IMPACT', consommation:'CONSOMMATION', defautModule:'Défaut Module'
+};
+
+function switchEnergieMain(type, el) {
+  document.querySelectorAll('#energie-main-tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentEnergieType = type;
+  currentEnergieMatiere = 'ETAT';
+  renderEnergie();
+}
+
+function renderEnergie() {
+  const config = energieConfig[currentEnergieType];
+  const matieres = Object.keys(config);
+  let html = `<div class="card">
+    <div class="card-title">⚡ ${currentEnergieType}</div>
+    <div class="energy-tabs">`;
+  matieres.forEach(m => {
+    html += `<div class="energy-tab ${m===currentEnergieMatiere?'active':''}" onclick="switchEnergieMatiere('${m}',this)">${m === 'ETAT' ? '📋' : m === 'INTERVENTION' ? '🔧' : '⚠️'} ${m}</div>`;
+  });
+  html += `</div>`;
+  html += renderEnergieTable(currentEnergieType, currentEnergieMatiere);
+  html += `</div>`;
+  document.getElementById('energie-content').innerHTML = html;
+}
+
+function switchEnergieMatiere(mat, el) {
+  document.querySelectorAll('.energy-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentEnergieMatiere = mat;
+  const container = document.getElementById('energie-table-area');
+  if (container) container.outerHTML = renderEnergieTable(currentEnergieType, mat);
+}
+
+function renderEnergieTable(type, matiere) {
+  const cols = energieConfig[type][matiere] || [];
+  const rows = DB['energie'][type][matiere] || [];
+  let html = `<div id="energie-table-area">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <strong>${matiere}</strong>
+      ${isAdmin ? `<button class="btn btn-success btn-sm" onclick="openEnergieModal('${type}','${matiere}')">➕ Ajouter</button>` : ''}
+    </div>
+    <div class="table-container"><table>
+      <thead><tr>${cols.map(c => `<th>${colLabels[c]||c}</th>`).join('')}${isAdmin ? '<th>Actions</th>' : ''}</tr></thead>
+      <tbody>`;
+  if (!rows.length) html += `<tr><td colspan="${cols.length+1}" class="no-data">Aucune donnée</td></tr>`;
+  else rows.forEach((row, idx) => {
+    html += `<tr>`;
+    cols.forEach(col => {
+      if (isAdmin) html += `<td><input type="text" value="${escHtml(row[col]||'')}" onchange="updateEnergieCell('${type}','${matiere}',${idx},'${col}',this.value)"></td>`;
+      else html += `<td>${escHtml(row[col]||'')}</td>`;
+    });
+    if (isAdmin) html += `<td><button class="btn btn-danger btn-sm" onclick="deleteEnergieRow('${type}','${matiere}',${idx})">🗑️</button></td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+  return html;
+}
+
+function openEnergieModal(type, matiere) {
+  currentEnergieType = type;
+  currentEnergieMatiere = matiere;
+  const cols = energieConfig[type][matiere] || [];
+  document.getElementById('modal-energie-title').textContent = `➕ Ajouter - ${type} / ${matiere}`;
+  let fieldsHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+  cols.forEach(col => {
+    fieldsHtml += `<div class="form-group"><label>${colLabels[col]||col}</label><input type="text" id="en-${col}"></div>`;
+  });
+  fieldsHtml += '</div>';
+  document.getElementById('modal-energie-fields').innerHTML = fieldsHtml;
+  openModal('modal-energie-row');
+}
+
+function addEnergieRow() {
+  const cols = energieConfig[currentEnergieType][currentEnergieMatiere] || [];
+  const row = {};
+  cols.forEach(col => { row[col] = v('en-' + col); });
+  DB['energie'][currentEnergieType][currentEnergieMatiere].push(row);
+  saveDB();
+  closeModal('modal-energie-row');
+  renderEnergie();
+}
+
+function updateEnergieCell(type, matiere, idx, col, val) {
+  DB['energie'][type][matiere][idx][col] = val; saveDB();
+}
+
+function deleteEnergieRow(type, matiere, idx) {
+  currentDeleteFn = () => {
+    DB['energie'][type][matiere].splice(idx, 1);
+    saveDB(); renderEnergie(); closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+// ==================== CONGE ====================
+function renderConge() {
+  const list = document.getElementById('conge-list');
+  if (!list) return;
+  const persons = DB['rh-conge'] || [];
+  if (!persons.length) {
+    list.innerHTML = '<div class="no-data" style="padding:24px;text-align:center;">Aucune personne. Ajoutez une personne ci-dessus.</div>';
+    return;
+  }
+  let html = '';
+  persons.forEach((person, idx) => {
+    html += `<div class="conge-person">
+      <div class="conge-person-header" onclick="toggleConge(${idx})">
+        <div class="conge-person-name">🏖️ ${escHtml(person.nom)}</div>
+        <div style="display:flex;gap:8px;">
+          ${isAdmin ? `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();currentCongePersonIdx=${idx};openModal('modal-add-conge-row')">➕</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCongePerson(${idx})">🗑️</button>` : ''}
+          <span>▼</span>
+        </div>
+      </div>
+      <div id="conge-body-${idx}" style="display:block;">
+        <div class="table-container"><table>
+          <thead><tr><th>Date Début</th><th>Date Fin</th><th>Durée</th><th>Reste</th><th>Observations</th>${isAdmin ? '<th>Actions</th>' : ''}</tr></thead>
+          <tbody>`;
+    const rows = person.rows || [];
+    if (!rows.length) html += `<tr><td colspan="6" class="no-data">Aucune période de congé</td></tr>`;
+    else rows.forEach((row, ridx) => {
+      html += `<tr>
+        <td>${escHtml(row.debut||'')}</td>
+        <td>${escHtml(row.fin||'')}</td>
+        <td>${escHtml(String(row.duree||''))}</td>
+        <td>${escHtml(String(row.reste||''))}</td>
+        <td>${escHtml(row.obs||'')}</td>
+        ${isAdmin ? `<td><button class="btn btn-danger btn-sm" onclick="deleteCongeRow(${idx},${ridx})">🗑️</button></td>` : ''}
+      </tr>`;
+    });
+    html += `</tbody></table></div></div></div>`;
+  });
+  list.innerHTML = html;
+}
+
+function toggleConge(idx) {
+  const body = document.getElementById('conge-body-' + idx);
+  if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+function addCongePerson() {
+  const nom = v('cp-nom');
+  if (!nom) return;
+  DB['rh-conge'].push({ nom, rows: [] });
+  saveDB();
+  closeModal('modal-add-conge-person');
+  renderConge();
+  document.getElementById('cp-nom').value = '';
+}
+
+function deleteCongePerson(idx) {
+  currentDeleteFn = () => {
+    DB['rh-conge'].splice(idx, 1);
+    saveDB(); renderConge(); closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+function addCongeRow() {
+  if (currentCongePersonIdx === null) return;
+  const row = { debut: v('cr-debut'), fin: v('cr-fin'), duree: v('cr-duree'), reste: v('cr-reste'), obs: v('cr-obs') };
+  DB['rh-conge'][currentCongePersonIdx].rows.push(row);
+  saveDB();
+  closeModal('modal-add-conge-row');
+  renderConge();
+}
+
+function deleteCongeRow(personIdx, rowIdx) {
+  currentDeleteFn = () => {
+    DB['rh-conge'][personIdx].rows.splice(rowIdx, 1);
+    saveDB(); renderConge(); closeModal('modal-confirm-delete');
+  };
+  openModal('modal-confirm-delete');
+}
+
+// ==================== STATS ====================
+function updateStats() {
+  const s = id => document.getElementById(id);
+  if (!s('stat-contacts')) return;
+  s('stat-contacts').textContent = (DB['rep-local']||[]).length + (DB['rep-regional']||[]).length;
+  const bL = Object.values(DB['boucle-local']||{}).reduce((a,b) => a+b.length, 0);
+  const bR = Object.values(DB['boucle-regional']||{}).reduce((a,b) => a+b.length, 0);
+  s('stat-boucle').textContent = bL + bR;
+  const fL = Object.values(DB['fmx-local']||{}).reduce((a,b) => a+b.length, 0);
+  const fR = Object.values(DB['fmx-regional']||{}).reduce((a,b) => a+b.length, 0);
+  s('stat-fmx').textContent = fL + fR;
+  s('stat-fibre').textContent = (DB['fibre']||[]).length;
+  s('stat-visites').textContent = (DB['visite-intervenant']||[]).length + (DB['visite-visiteurs']||[]).length;
+  s('stat-personnel').textContent = (DB['rh-personnel']||[]).length;
+}
+
+// ==================== GLOBAL SEARCH ====================
+function doGlobalSearch(val) {
+  const container = document.getElementById('globalResults');
+  if (!val || val.length < 2) { container.innerHTML = ''; return; }
+  const q = val.toLowerCase();
+  let results = [];
+  const searchIn = (arr, label, cols) => {
+    (arr||[]).forEach((row, i) => {
+      if (Object.values(row).join(' ').toLowerCase().includes(q)) {
+        results.push({ label, row, cols });
+      }
+    });
+  };
+  searchIn(DB['rep-local'], '📒 Répertoire Local', ['nom','fix','mobile','mail','adresse','obs']);
+  searchIn(DB['rep-regional'], '📒 Répertoire Régional', ['nom','fix','mobile','mail','adresse','obs']);
+  searchIn(DB['rep-entreprise'], '🏭 Entreprise', ['nom','entreprise','nature','date','obs']);
+  searchIn(DB['visite-intervenant'], '🔧 Intervenant', ['nom','service','nature','date','obs']);
+  searchIn(DB['visite-visiteurs'], '👁️ Visiteur', ['nom','structure','nature','date','obs']);
+  searchIn(DB['fibre'], '🔌 Fibre', ['lettre','paires','exA','exB','date','intervenant']);
+  searchIn(DB['rh-personnel'], '👤 Personnel', ['nom','matricule','grade','email']);
+  if (!results.length) {
+    container.innerHTML = '<div class="no-data">Aucun résultat trouvé.</div>'; return;
+  }
+  let html = `<div style="font-size:13px;color:#555;margin-bottom:10px;">${results.length} résultat(s) trouvé(s)</div>`;
+  results.slice(0, 30).forEach(r => {
+    html += `<div style="background:#f0f7ff;border-radius:8px;padding:10px 14px;margin-bottom:8px;border-left:4px solid #0d6efd;">
+      <strong>${r.label}</strong><br>
+      <span style="color:#555;font-size:13px;">${r.cols.map(c => r.row[c] ? `${c}: <b>${escHtml(r.row[c])}</b>` : '').filter(Boolean).join(' | ')}</span>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ==================== MODAL ====================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// ==================== UTILS ====================
+function v(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function sanitize(str) {
+  return str.replace(/[^a-zA-Z0-9]/g, '_');
+}
+function id(i) { return document.getElementById(i); }
+
+// ==================== INIT ====================
+function initApp() {
+  initDB();
+  renderAllTables();
+  updateStats();
+  // Setup alpha grid
+  const ag = document.getElementById('alphaGrid');
+  if (ag) {
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(l => {
+      const btn = document.createElement('div');
+      btn.className = 'alpha-btn' + (l === currentFibreLetter ? ' active' : '');
+      btn.textContent = l;
+      btn.onclick = () => { currentFibreLetter = l; renderFibre(); };
+      ag.appendChild(btn);
+    });
+  }
+}
+
+// Allow Enter key on login
+document.getElementById('username').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('password').focus();
+});
+</script>
+</body>
+</html>
